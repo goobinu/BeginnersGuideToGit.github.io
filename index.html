@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Git & GitHub Guide for Beginners</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .sidebar { transition: transform 0.3s ease-in-out; }
+        .content-section { display: none; }
+        .content-section.active { display: block; }
+        .collapsible-content { max-height: 0; overflow: hidden; transition: max-height 0.5s ease-out; }
+        .collapsible-content.open { max-height: 2000px; /* Adjust as needed */ }
+        .branch-viz div { border-left: 2px solid; padding-left: 10px; margin-left: 10px; }
+        .branch-viz .main-branch { border-color: #3b82f6; /* blue-500 */ }
+        .branch-viz .feature-branch { border-color: #10b981; /* emerald-500 */ margin-left: 30px; }
+        .code-block { background-color: #f3f4f6; border: 1px solid #e5e7eb; padding: 8px 12px; border-radius: 4px; font-family: monospace; display: inline-block; margin-top: 4px; margin-bottom: 4px; width: auto; }
+        .code-block.full { display: block; width: 100%; white-space: pre-wrap; word-break: break-all; }
+        .term { color: #0ea5e9; /* sky-500 */ cursor: pointer; font-weight: 600; }
+        .tooltip {
+            visibility: hidden;
+            background-color: #1f2937; /* gray-800 */
+            color: #fff;
+            text-align: center;
+            border-radius: 6px;
+            padding: 8px;
+            position: absolute;
+            z-index: 10;
+            bottom: 125%;
+            left: 50%;
+            margin-left: -100px; /* Half of width */
+            opacity: 0;
+            transition: opacity 0.3s;
+            width: 200px;
+            font-size: 0.875rem;
+        }
+        .term:hover .tooltip { visibility: visible; opacity: 1; }
+        .chart-container { position: relative; width: 100%; max-width: 400px; margin-left: auto; margin-right: auto; height: 300px; max-height: 350px; }
+        @media (min-width: 768px) { .chart-container { height: 350px; } }
+
+        nav a {
+            display: block;
+            padding: 0.75rem 1rem;
+            border-radius: 0.375rem;
+            transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out;
+        }
+        nav a:hover {
+            background-color: #e0f2fe; /* sky-100 */
+            color: #0c4a6e; /* sky-800 */
+        }
+        nav a.active-nav {
+            background-color: #0ea5e9; /* sky-500 */
+            color: white;
+            font-weight: 600;
+        }
+        .menu-button {
+            display: none; /* Hidden on larger screens */
+        }
+        @media (max-width: 768px) {
+            .menu-button { display: block; }
+            .sidebar {
+                position: fixed;
+                top: 0;
+                left: 0;
+                height: 100%;
+                transform: translateX(-100%);
+                z-index: 40; /* Ensure sidebar is above content */
+            }
+            .sidebar.open {
+                transform: translateX(0);
+            }
+            .main-content {
+                margin-left: 0;
+                padding-top: 4rem; /* Space for fixed header if any, or just top padding */
+            }
+        }
+    </style>
+</head>
+<body class="bg-stone-100 text-stone-800">
+    <div class="flex flex-col md:flex-row min-h-screen">
+        <button id="menuButton" class="menu-button fixed top-4 left-4 z-50 p-2 bg-sky-600 text-white rounded-md md:hidden">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
+            </svg>
+        </button>
+
+        <aside id="sidebar" class="sidebar w-64 bg-white shadow-lg p-4 space-y-2 md:translate-x-0">
+            <h1 class="text-2xl font-bold text-sky-700 mb-6 border-b pb-2">Git & GitHub Guide</h1>
+            <nav>
+                <a href="#intro" class="nav-link">Introduction</a>
+                <a href="#commits" class="nav-link">Perfect Commits</a>
+                <a href="#branching" class="nav-link">Branching Strategies</a>
+                <a href="#collaboration" class="nav-link">Collaboration</a>
+                <a href="#integrating" class="nav-link">Integrating Changes</a>
+                <a href="#conflicts" class="nav-link">Merge Conflicts</a>
+                <a href="#aliases" class="nav-link">Git Aliases</a>
+                <a href="#glossary" class="nav-link">Glossary & Takeaways</a>
+            </nav>
+        </aside>
+
+        <main id="mainContent" class="main-content flex-1 p-6 md:p-10 overflow-y-auto">
+            <section id="intro" class="content-section space-y-4">
+                <h2 class="text-3xl font-semibold text-sky-600 border-b-2 border-sky-200 pb-2">Welcome! Understanding Git & GitHub</h2>
+                <p class="text-lg">This guide helps beginners grasp the essentials of Git and GitHub, building upon concepts often covered in introductory tutorials. We'll explore how to use these tools effectively for version control and collaboration.</p>
+                <div class="grid md:grid-cols-2 gap-6 mt-6">
+                    <div class="bg-white p-6 rounded-lg shadow">
+                        <h3 class="text-xl font-semibold text-sky-700 mb-2">What is Git?</h3>
+                        <p>Git is a powerful <strong class="term">Version Control System (VCS)<span class="tooltip">A system that records changes to a file or set of files over time so that you can recall specific versions later.</span></strong>. Think of it as a super-smart "save" system for your projects. It runs on your computer and lets you:</p>
+                        <ul class="list-disc list-inside mt-2 space-y-1 text-stone-700">
+                            <li>Track every change you make.</li>
+                            <li>Revert to previous versions if needed.</li>
+                            <li>Work on different features in isolation using branches.</li>
+                            <li>Collaborate with others more effectively.</li>
+                        </ul>
+                    </div>
+                    <div class="bg-white p-6 rounded-lg shadow">
+                        <h3 class="text-xl font-semibold text-sky-700 mb-2">What is GitHub?</h3>
+                        <p>GitHub (and similar platforms like GitLab or Bitbucket) is a website that hosts your Git repositories. It adds a layer of collaboration and accessibility on top of Git:</p>
+                        <ul class="list-disc list-inside mt-2 space-y-1 text-stone-700">
+                            <li><strong>Remote Storage:</strong> A safe place to back up your projects online.</li>
+                            <li><strong>Collaboration Tools:</strong> Features like <strong class="term">Pull Requests<span class="tooltip">A way to propose changes and request that someone review and merge them into another branch.</span></strong> for code review.</li>
+                            <li><strong>Community:</strong> Discover and contribute to open-source projects.</li>
+                        </ul>
+                    </div>
+                </div>
+                <p class="mt-4 text-md italic">Think of Git as the engine, and GitHub as the car that provides a user-friendly interface and powerful features for that engine.</p>
+            </section>
+
+            <section id="commits" class="content-section space-y-4">
+                <h2 class="text-3xl font-semibold text-sky-600 border-b-2 border-sky-200 pb-2">Crafting the Perfect Commit</h2>
+                <p class="text-lg">A commit is a snapshot of your project at a specific point. Making "perfect" commits is key to a clean and understandable project history.</p>
+                <div class="bg-white p-6 rounded-lg shadow space-y-3">
+                    <h3 class="text-xl font-semibold text-sky-700">1. Add the Right Changes (Atomic Commits)</h3>
+                    <p>Each commit should represent a single, logical unit of work. If you fix a bug and add a new feature, those should ideally be two separate commits.</p>
+                    <p>To stage parts of a file, you can use: <code class="code-block">git add -p</code> (patch mode). This lets you choose specific "hunks" or chunks of changes to include.</p>
+
+                    <h3 class="text-xl font-semibold text-sky-700 mt-4">2. Write the Right Commit Message</h3>
+                    <p>A clear message explains the *why* behind a change.</p>
+                    <ul class="list-disc list-inside space-y-1">
+                        <li><strong>Subject:</strong> A concise summary (e.g., "Fix user login button"). If it's hard to write a short summary, you might be including too many unrelated changes.</li>
+                        <li><strong>Body (Optional but good for detail):</strong>
+                            <ul class="list-circle list-inside ml-4">
+                                <li>What's different now?</li>
+                                <li>Why was this change made?</li>
+                                <li>Anything remarkable or to watch out for?</li>
+                            </ul>
+                        </li>
+                    </ul>
+                    <p>Use <code class="code-block">git commit</code> to open a text editor for a detailed message, or <code class="code-block">git commit -m "Subject line"</code> for a short one.</p>
+                    <p>Always check your work with <code class="code-block">git log</code> before pushing changes.</p>
+                </div>
+                <div class="mt-6 bg-white p-6 rounded-lg shadow">
+                     <h3 class="text-xl font-semibold text-sky-700 mb-3">Effort in a Perfect Commit</h3>
+                     <p class="mb-4 text-sm text-stone-600">A good commit involves not just writing code, but also carefully crafting the commit itself (selecting changes and writing a clear message). This chart gives a conceptual idea.</p>
+                     <div class="chart-container">
+                        <canvas id="commitEffortChart"></canvas>
+                    </div>
+                </div>
+            </section>
+
+            <section id="branching" class="content-section space-y-4">
+                <h2 class="text-3xl font-semibold text-sky-600 border-b-2 border-sky-200 pb-2">Branching Strategies</h2>
+                <p class="text-lg">Branches allow you to work on different features or fixes in isolation without affecting the main project line. Establishing conventions for branching is crucial for teamwork.</p>
+                <div class="bg-white p-6 rounded-lg shadow space-y-3">
+                    <h3 class="text-xl font-semibold text-sky-700">What is a Branch?</h3>
+                    <p>Imagine your project's main development line (often called <code class="term">main<span class="tooltip">The default branch name for new repositories. Formerly 'master'.</span></code> or <code class="term">master<span class="tooltip">An older default branch name. 'main' is now preferred.</span></code>). A branch is like making a copy of this line to work on something new. Once done, you can <strong class="term">merge<span class="tooltip">To combine the changes from different branches.</span></strong> it back.</p>
+                    <div class="my-4 p-3 bg-stone-50 rounded border border-stone-200 branch-viz">
+                        <p class="font-semibold mb-1">Simple Branch Visual:</p>
+                        <div class="main-branch">Main Line (e.g., main)
+                            <div class="feature-branch">New Feature Branch</div>
+                        </div>
+                    </div>
+
+                    <div class="collapsible">
+                        <button class="collapsible-trigger text-lg font-medium text-sky-600 hover:text-sky-800 flex items-center">
+                            Branching Methodologies <span class="ml-1 transform transition-transform">▼</span>
+                        </button>
+                        <div class="collapsible-content ml-4 mt-2 space-y-2 border-l-2 border-sky-200 pl-4">
+                            <p><strong>Mainline Development:</strong> "Always Be Integrating." Few branches, small commits, high testing standards.</p>
+                            <p><strong>State, Release, and Feature Branches:</strong> Different types of branches for different jobs.</p>
+                        </div>
+                    </div>
+
+                    <div class="collapsible mt-3">
+                        <button class="collapsible-trigger text-lg font-medium text-sky-600 hover:text-sky-800 flex items-center">
+                            Types of Branches <span class="ml-1 transform transition-transform">▼</span>
+                        </button>
+                        <div class="collapsible-content ml-4 mt-2 space-y-2 border-l-2 border-sky-200 pl-4">
+                            <p><strong>Long-Running Branches:</strong> Exist throughout the project's life (e.g., `main`, `develop`, `staging`). Often mirror development stages. Direct commits are usually avoided; changes are merged in.</p>
+                            <p><strong>Short-Lived Branches:</strong> Created for specific tasks (features, bug fixes, experiments) and deleted after integration. Typically based on a long-running branch.</p>
+                        </div>
+                    </div>
+
+                     <div class="collapsible mt-3">
+                        <button class="collapsible-trigger text-lg font-medium text-sky-600 hover:text-sky-800 flex items-center">
+                            Example Branching Strategies <span class="ml-1 transform transition-transform">▼</span>
+                        </button>
+                        <div class="collapsible-content ml-4 mt-2 space-y-2 border-l-2 border-sky-200 pl-4">
+                            <p><strong>GitHub Flow:</strong> Very simple. One long-running branch (`main`). All work is done in short-lived branches and merged back via Pull Requests.</p>
+                            <p><strong>GitFlow:</strong> More structured. Uses `main` for production, `develop` for integration. Feature branches stem from `develop`. Release branches are used to prepare for production.</p>
+                            <p class="italic mt-2">There's no "one-size-fits-all." Choose based on your project and team.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="collaboration" class="content-section space-y-4">
+                <h2 class="text-3xl font-semibold text-sky-600 border-b-2 border-sky-200 pb-2">Collaboration with Git & GitHub</h2>
+                <p class="text-lg">GitHub enhances Git's capabilities with powerful tools for teamwork.</p>
+                <div class="bg-white p-6 rounded-lg shadow space-y-3">
+                    <h3 class="text-xl font-semibold text-sky-700">Forks</h3>
+                    <p>A <strong class="term">fork<span class="tooltip">A personal copy of someone else's repository on GitHub.</span></strong> is your personal copy of another repository on GitHub. You can freely experiment or make changes in your fork. To contribute back, you'd use a Pull Request.</p>
+
+                    <h3 class="text-xl font-semibold text-sky-700 mt-4">Pull Requests (PRs)</h3>
+                    <p>PRs are a formal way to propose changes and request code review. They are essential for:</p>
+                    <ul class="list-disc list-inside space-y-1">
+                        <li><strong>Code Review:</strong> Get feedback before merging changes.</li>
+                        <li><strong>Contribution:</strong> Propose changes from your fork to the original project.</li>
+                    </ul>
+                    <p>PRs are based on branches, not individual commits.</p>
+                     <div class="my-4 p-3 bg-stone-50 rounded border border-stone-200">
+                        <p class="font-semibold mb-1">Simplified PR Workflow:</p>
+                        <ol class="list-decimal list-inside space-y-1">
+                            <li>Fork the original repository.</li>
+                            <li>Clone your fork locally.</li>
+                            <li>Create a new branch for your changes.</li>
+                            <li>Make commits on your branch.</li>
+                            <li>Push your branch to your fork on GitHub.</li>
+                            <li>Open a Pull Request from your branch to the original repository's main branch.</li>
+                            <li>Discuss, review, and (if approved) the maintainer merges your PR.</li>
+                        </ol>
+                    </div>
+
+
+                    <h3 class="text-xl font-semibold text-sky-700 mt-4">Pushing Changes</h3>
+                    <p>After committing locally, use <code class="code-block">git push</code> to send your commits to a remote repository (like your fork on GitHub).</p>
+                    <p>For a new branch, you might use: <code class="code-block">git push --set-upstream origin &lt;branch-name&gt;</code>. This links your local branch to the remote one.</p>
+                </div>
+            </section>
+
+            <section id="integrating" class="content-section space-y-4">
+                <h2 class="text-3xl font-semibold text-sky-600 border-b-2 border-sky-200 pb-2">Integrating Changes: Merge vs. Rebase</h2>
+                <p class="text-lg">Once work on a branch is done, you need to integrate it back. `merge` and `rebase` are two common ways.</p>
+                <div class="grid md:grid-cols-2 gap-6">
+                    <div class="bg-white p-6 rounded-lg shadow space-y-3">
+                        <h3 class="text-xl font-semibold text-sky-700">git merge</h3>
+                        <p>Combines histories. Git finds the common ancestor of two branches and creates a new "merge commit" that unites the changes from both.</p>
+                        <p><strong>Pros:</strong> Preserves history as it happened. Non-destructive.</p>
+                        <p><strong>Cons:</strong> Can lead to a complex, non-linear history with many merge commits.</p>
+                        <p><strong>Fast-Forward Merge:</strong> If the target branch has no new commits since the feature branch diverged, Git can simply move the target branch's pointer forward. No merge commit is created.</p>
+                         <div class="my-3 p-2 bg-stone-50 border rounded">
+                            <p class="font-medium text-sm">Conceptual Merge History:</p>
+                            <div class="text-xs branch-viz">
+                                <div class="main-branch">A--B--E (main)
+                                    <div class="feature-branch" style="margin-left:15px; border-color: #f97316;">C--D (feature)</div>
+                                </div>
+                                <div class="main-branch" style="margin-top:-5px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;\\ /</div>
+                                <div class="main-branch" style="margin-top:-5px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;M (merge commit)</div>
+
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-white p-6 rounded-lg shadow space-y-3">
+                        <h3 class="text-xl font-semibold text-sky-700">git rebase</h3>
+                        <p><strong class="term">Rebase<span class="tooltip">Rewrites commit history by replaying commits from one branch on top of another.</span></strong> rewrites history by taking commits from one branch and replaying them on top of another. This creates a linear history.</p>
+                        <p><strong>Pros:</strong> Cleaner, linear project history. Avoids unnecessary merge commits.</p>
+                        <p><strong>Cons:</strong> Rewrites history (changes commit IDs). <strong class="text-red-600">Dangerous on shared/pushed branches.</strong></p>
+                        <p class="font-bold text-red-700 bg-red-100 p-2 rounded">The Golden Rule: Do NOT rebase commits that you've already pushed and shared! Use it to clean up your *local* commit history *before* sharing.</p>
+                        <div class="my-3 p-2 bg-stone-50 border rounded">
+                            <p class="font-medium text-sm">Conceptual Rebase History (Feature rebased onto Main):</p>
+                             <div class="text-xs branch-viz">
+                                <div class="main-branch">A--B--E (main)
+                                    <div class="feature-branch" style="margin-left:25px; border-color: #f97316;">C'--D' (feature rebased)</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="conflicts" class="content-section space-y-4">
+                <h2 class="text-3xl font-semibold text-sky-600 border-b-2 border-sky-200 pb-2">Handling Merge Conflicts</h2>
+                <p class="text-lg">Conflicts occur when Git can't automatically combine changes from different sources because the same lines in a file were changed differently.</p>
+                <div class="bg-white p-6 rounded-lg shadow space-y-3">
+                    <h3 class="text-xl font-semibold text-sky-700">How Conflicts Happen</h3>
+                    <p>During a `merge`, `rebase`, `pull`, etc., if contradictory changes are found, Git will stop and tell you there's a conflict.</p>
+                    <h3 class="text-xl font-semibold text-sky-700 mt-3">Solving Conflicts</h3>
+                    <ol class="list-decimal list-inside space-y-1">
+                        <li>Git marks conflicted areas in files with `&lt;&lt;&lt;&lt;&lt;&lt;&lt;`, `=======`, `&gt;&gt;&gt;&gt;&gt;&gt;&gt;`.</li>
+                        <li>Open the conflicted file(s).</li>
+                        <li>Edit the file to keep the desired changes and remove the conflict markers. You might need to discuss with teammates.</li>
+                        <li>Save the file.</li>
+                        <li>Stage the resolved file: <code class="code-block">git add &lt;filename&gt;</code>.</li>
+                        <li>Continue the operation:
+                            <ul class="list-disc list-inside ml-4">
+                                <li>If merging: <code class="code-block">git commit</code></li>
+                                <li>If rebasing: <code class="code-block">git rebase --continue</code></li>
+                            </ul>
+                        </li>
+                    </ol>
+                    <p>To abort and start over: <code class="code-block">git merge --abort</code> or <code class="code-block">git rebase --abort</code>.</p>
+                </div>
+            </section>
+
+            <section id="aliases" class="content-section space-y-4">
+                <h2 class="text-3xl font-semibold text-sky-600 border-b-2 border-sky-200 pb-2">Speeding Up Your Workflow with Git Aliases</h2>
+                <p class="text-lg">Git aliases are custom shortcuts for longer or frequently used Git commands. They can save you a lot of typing and make your Git experience more efficient and personalized.</p>
+                <div class="bg-white p-6 rounded-lg shadow space-y-3">
+                    <h3 class="text-xl font-semibold text-sky-700">What are Git Aliases?</h3>
+                    <p>An alias in Git is simply a way to define a shorter, more memorable name for a Git command or a sequence of commands. Instead of typing out a long command every time, you can use your custom alias.</p>
+
+                    <h3 class="text-xl font-semibold text-sky-700 mt-4">Why Use Them?</h3>
+                    <ul class="list-disc list-inside space-y-1 text-stone-700">
+                        <li><strong>Save Time & Keystrokes:</strong> This is the most obvious benefit. Commands like <code class="code-block">git checkout</code> become <code class="code-block">git co</code>.</li>
+                        <li><strong>Reduce Typos:</strong> Shorter commands mean fewer chances to make a mistake.</li>
+                        <li><strong>Simplify Complex Commands:</strong> You can alias a long, complex command with many options to a simple, easy-to-remember word.</li>
+                        <li><strong>Consistency:</strong> If working in a team, aliases can help standardize common operations (though personal aliases are more common).</li>
+                    </ul>
+
+                    <h3 class="text-xl font-semibold text-sky-700 mt-4">How to Create Aliases</h3>
+                    <p>You create aliases using the <code class="code-block">git config</code> command. Most commonly, you'll want to set them globally so they are available in all your Git repositories.</p>
+                    <p>The command format is: <code class="code-block full">git config --global alias.&lt;your-alias-name&gt; "&lt;the-full-git-command&gt;"</code></p>
+                    <p>For example, to create an alias <code class="code-block">st</code> for <code class="code-block">status</code>, you would run:</p>
+                    <pre class="code-block full">git config --global alias.st "status"</pre>
+                    <p>These global aliases are stored in your global Git configuration file, which is usually located at <code class="code-block">~/.gitconfig</code> or <code class="code-block">~/.config/git/config</code>. You can also edit this file directly to add or modify aliases.</p>
+                    <p class="text-sm italic">Note: You can also create repository-specific aliases by omitting the <code class="code-block">--global</code> flag, but global aliases are generally more useful for personal productivity.</p>
+
+                    <div class="collapsible mt-4">
+                        <button class="collapsible-trigger text-lg font-medium text-sky-600 hover:text-sky-800 flex items-center">
+                            Common & Useful Alias Examples <span class="ml-1 transform transition-transform">▼</span>
+                        </button>
+                        <div class="collapsible-content ml-4 mt-2 space-y-3 border-l-2 border-sky-200 pl-4">
+                            <div>
+                                <p><strong>Simple Shortcuts:</strong></p>
+                                <ul class="list-disc list-inside space-y-1">
+                                    <li><code class="code-block">co</code> for <code class="code-block">checkout</code>: <code class="code-block full">git config --global alias.co "checkout"</code></li>
+                                    <li><code class="code-block">br</code> for <code class="code-block">branch</code>: <code class="code-block full">git config --global alias.br "branch"</code></li>
+                                    <li><code class="code-block">ci</code> for <code class="code-block">commit</code>: <code class="code-block full">git config --global alias.ci "commit"</code></li>
+                                    <li><code class="code-block">st</code> for <code class="code-block">status</code>: <code class="code-block full">git config --global alias.st "status"</code></li>
+                                </ul>
+                            </div>
+                            <div class="mt-3">
+                                <p><strong>More Advanced/Helpful Aliases:</strong></p>
+                                 <ul class="list-disc list-inside space-y-1">
+                                    <li>Show last commit: <code class="code-block">last</code>
+                                        <pre class="code-block full">git config --global alias.last "log -1 HEAD"</pre>
+                                    </li>
+                                    <li>Prettier log output: <code class="code-block">lg</code> or <code class="code-block">hist</code>
+                                        <pre class="code-block full">git config --global alias.lg "log --graph --pretty=format:'%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset' --abbrev-commit --date=relative"</pre>
+                                        <p class="text-sm italic ml-4">This creates a compact, colorful, and graphical log.</p>
+                                    </li>
+                                     <li>Unstage a file: <code class="code-block">unstage</code>
+                                        <pre class="code-block full">git config --global alias.unstage "reset HEAD --"</pre>
+                                        <p class="text-sm italic ml-4">Usage: <code class="code-block">git unstage &lt;file&gt;</code></p>
+                                    </li>
+                                </ul>
+                            </div>
+                             <p class="mt-3">To use an alias, simply type <code class="code-block">git &lt;your-alias-name&gt;</code>. For example, <code class="code-block">git st</code>.</p>
+                        </div>
+                    </div>
+                    <p class="mt-4">Experiment with creating your own aliases for commands you use frequently. It's a small change that can make a big difference in your daily Git usage!</p>
+                </div>
+            </section>
+
+            <section id="glossary" class="content-section space-y-4">
+                <h2 class="text-3xl font-semibold text-sky-600 border-b-2 border-sky-200 pb-2">Key Takeaways & Glossary</h2>
+                 <div class="bg-white p-6 rounded-lg shadow space-y-3">
+                    <h3 class="text-xl font-semibold text-sky-700">Key Takeaways for Beginners</h3>
+                    <ul class="list-disc list-inside space-y-1">
+                        <li><strong>Start Simple:</strong> Focus on `add`, `commit`, `push`, `pull`, and basic branching.</li>
+                        <li><strong>Commit Often, Commit Small:</strong> Make logical commits with clear messages.</li>
+                        <li><strong>Branch for New Work:</strong> Don't work directly on `main`.</li>
+                        <li><strong>Pull Requests are Your Friend:</strong> Use them for review and collaboration on GitHub.</li>
+                        <li><strong>Merge vs. Rebase:</strong> `merge` is safer for shared history; `rebase` is for local cleanup (with caution!).</li>
+                        <li><strong>Don't Panic with Conflicts:</strong> They happen. Learn to resolve them.</li>
+                        <li><strong>Use Aliases:</strong> Speed up your workflow with custom shortcuts for common commands.</li>
+                    </ul>
+                </div>
+                <div class="mt-6 bg-white p-6 rounded-lg shadow space-y-3">
+                    <h3 class="text-xl font-semibold text-sky-700">Mini Glossary</h3>
+                    <dl class="space-y-2">
+                        <dt class="font-semibold">Repository (Repo):</dt>
+                        <dd class="ml-4">A project's folder tracked by Git, containing all files and their history.</dd>
+                        <dt class="font-semibold">Clone:</dt>
+                        <dd class="ml-4">To create a local copy of a remote repository.</dd>
+                        <dt class="font-semibold">Stage / Index:</dt>
+                        <dd class="ml-4">An intermediate area where you prepare changes before committing them.</dd>
+                        <dt class="font-semibold">Fetch:</dt>
+                        <dd class="ml-4">To download changes from a remote repository but not automatically integrate them into your working files.</dd>
+                        <dt class="font-semibold">Pull:</dt>
+                        <dd class="ml-4">To fetch changes from a remote repository AND automatically try to merge them into your current branch.</dd>
+                        <dt class="font-semibold">Origin:</dt>
+                        <dd class="ml-4">The default name Git gives to the remote repository you cloned from.</dd>
+                        <dt class="font-semibold">Alias:</dt>
+                        <dd class="ml-4">A custom shortcut for a longer Git command.</dd>
+                    </dl>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const navLinks = document.querySelectorAll('.nav-link');
+            const contentSections = document.querySelectorAll('.content-section');
+            const sidebar = document.getElementById('sidebar');
+            const menuButton = document.getElementById('menuButton');
+            const mainContent = document.getElementById('mainContent');
+
+            function updateContent(hash) {
+                hash = hash || window.location.hash || '#intro';
+                contentSections.forEach(section => section.classList.remove('active'));
+                navLinks.forEach(link => link.classList.remove('active-nav'));
+
+                const activeSection = document.querySelector(hash);
+                const activeLink = document.querySelector(`nav a[href="${hash}"]`);
+
+                if (activeSection) activeSection.classList.add('active');
+                if (activeLink) activeLink.classList.add('active-nav');
+
+                // Close sidebar on navigation for mobile
+                if (sidebar.classList.contains('open')) {
+                    sidebar.classList.remove('open');
+                }
+            }
+
+            navLinks.forEach(link => {
+                link.addEventListener('click', function (e) {
+                    // e.preventDefault(); // Keep default behavior to update hash
+                    const targetId = this.getAttribute('href');
+                    updateContent(targetId);
+                    if (window.innerWidth < 768) { // md breakpoint
+                        sidebar.classList.remove('open');
+                    }
+                });
+            });
+
+            window.addEventListener('hashchange', () => updateContent());
+            updateContent(); // Initial load
+
+            // Collapsible sections
+            document.querySelectorAll('.collapsible-trigger').forEach(trigger => {
+                trigger.addEventListener('click', function () {
+                    const content = this.nextElementSibling;
+                    content.classList.toggle('open');
+                    const arrow = this.querySelector('span');
+                    if (arrow) {
+                        arrow.classList.toggle('rotate-180');
+                         arrow.textContent = content.classList.contains('open') ? '▲' : '▼';
+                    }
+                });
+            });
+            
+            // Mobile menu toggle
+            menuButton.addEventListener('click', function() {
+                sidebar.classList.toggle('open');
+            });
+
+            // Close sidebar when clicking outside on mobile
+            mainContent.addEventListener('click', function() {
+                if (window.innerWidth < 768 && sidebar.classList.contains('open')) {
+                    sidebar.classList.remove('open');
+                }
+            });
+
+
+            // Chart.js: Commit Effort Chart
+            const ctx = document.getElementById('commitEffortChart');
+            if (ctx) {
+                new Chart(ctx.getContext('2d'), {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['Writing Code & Logic', 'Crafting Commit (Staging & Message)'],
+                        datasets: [{
+                            label: 'Effort Distribution',
+                            data: [65, 35], // Example data
+                            backgroundColor: [
+                                'rgba(59, 130, 246, 0.7)', // blue-500
+                                'rgba(16, 185, 129, 0.7)'  // emerald-500
+                            ],
+                            borderColor: [
+                                'rgba(59, 130, 246, 1)',
+                                'rgba(16, 185, 129, 1)'
+                            ],
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'top',
+                            },
+                            title: {
+                                display: false,
+                                text: 'Conceptual Effort in a Perfect Commit'
+                            }
+                        }
+                    }
+                });
+            }
+        });
+    </script>
+</body>
+</html>
